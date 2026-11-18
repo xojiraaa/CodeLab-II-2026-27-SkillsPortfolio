@@ -1,0 +1,16 @@
+import tkinter as tk
+from random import randint, choice
+
+root = tk.Tk()
+root.geometry("450x450")
+root.title("Arithmetic Maths Quiz")
+root.resizable(False, False)
+root.grid_columnconfigure(0, weight=1)
+
+totalQuestions = 10
+
+difficultyRanges = {
+    "easy" (1, 9),
+    "moderate" (10, 99),
+    "advanced" (1000, 9999),
+}
