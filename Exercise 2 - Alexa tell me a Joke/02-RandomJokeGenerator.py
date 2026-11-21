@@ -37,3 +37,37 @@ class RandomJokeGenerator:
 
         self.rootWindow.grid_columnconfigure(0, weight=1)
         self.buildLayout()
+
+def clearContainer(self, targetContainer):
+        for childWidget in targetContainer.winfo_children():
+            childWidget.destroy()
+
+def buildLayout(self):
+        self.clearContainer(self.rootWindow)
+
+        mainFrame = tk.Frame(self.rootWindow, bg="#FFF5F8", padx=22, pady=18)
+        mainFrame.grid(row=0, column=0, sticky="nsew")
+        mainFrame.grid_columnconfigure(0, weight=1)
+
+        headerBox = tk.Frame(mainFrame, bg="#FAD2E1", highlightthickness=0, bd=0, relief=tk.FLAT, padx=12, pady=10)
+        headerBox.grid(row=0, column=0, sticky="ew", pady=(0, 12))
+        headerBox.grid_columnconfigure(0, weight=1)
+
+        tk.Label(headerBox, text="Lei's Random Joke Generator", font=("Arial", 15, "bold"), bg="#FAD2E1", fg="#85593E").grid(row=0, column=0)
+        tk.Label(headerBox, text="powered by Alexa", font=("Arial", 9, "italic"), bg="#FAD2E1", fg="#85593E").grid(row=1, column=0, pady=(2, 0))
+
+        jokeCard = tk.Frame(mainFrame, bg="#FFEBF2", highlightthickness=0, bd=0, relief=tk.FLAT, height=175, padx=16, pady=18)
+        jokeCard.grid(row=1, column=0, sticky="ew", pady=(0, 14))
+        jokeCard.grid_propagate(False)
+        jokeCard.grid_columnconfigure(0, weight=1)
+        jokeCard.grid_rowconfigure(0, weight=1)
+
+        jokeTextFrame = tk.Frame(jokeCard, bg="#FFEBF2")
+        jokeTextFrame.grid(row=0, column=0)
+        jokeTextFrame.grid_columnconfigure(0, weight=1)
+
+        self.setupLabel = tk.Label(jokeTextFrame, text="Ready to laugh?\nClick the button below to start!", font=("Arial", 15), bg="#FFEBF2", fg="#85593E", wraplength=360, justify="center")
+        self.setupLabel.grid(row=0, column=0)
+
+        self.punchlineLabel = tk.Label(jokeTextFrame, text="", font=("Arial", 11, "italic", "bold"), bg="#FFEBF2", fg="#85593E", wraplength=360, justify="center")
+        self.punchlineLabel.grid(row=1, column=0, pady=(10, 0))
