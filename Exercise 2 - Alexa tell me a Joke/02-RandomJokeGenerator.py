@@ -22,4 +22,3 @@ def loadJokes(filepath):
     if not jokesList:
         raise ValueError("randomJokes.txt contains no valid '?' separate jokes.")
     return jokesList
-
