@@ -22,3 +22,18 @@ def loadJokes(filepath):
     if not jokesList:
         raise ValueError("randomJokes.txt contains no valid '?' separate jokes.")
     return jokesList
+    
+class RandomJokeGenerator:
+    def __init__(self, rootWindow, jokesList):
+        self.rootWindow = rootWindow
+        self.rootWindow.title("Random Joke Generator")
+        self.rootWindow.geometry("450x500")
+        self.rootWindow.resizable(False, False)
+        self.rootWindow.configure(bg="#FFF5F8")
+
+        self.jokesList = jokesList
+        self.currentJoke = None
+        self.lastIndex = None
+
+        self.rootWindow.grid_columnconfigure(0, weight=1)
+        self.buildLayout()
