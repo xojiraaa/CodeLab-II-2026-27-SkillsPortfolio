@@ -88,3 +88,22 @@ def buildLayout(self):
 
         self.quitButton = tk.Button(buttonFrame, text="Quit", font=("Arial", 10, "bold"), bg="#FAD2E1", fg="#85593E", activebackground="#F5BAD0", activeforeground="#85593E", highlightbackground="#85593E", highlightthickness=4, relief=tk.GROOVE, bd=4, padx=10, pady=9, command=self.rootWindow.destroy)
         self.quitButton.grid(row=2, column=0, columnspan=2, sticky="ew")
+
+def pickJoke(self):
+        if len(self.jokesList) == 1:
+            self.lastIndex = 0
+            return self.jokesList[0]
+
+        jokeOption = [jokeIndex for jokeIndex in range(len(self.jokesList)) if jokeIndex != self.lastIndex]
+        chosenIndex = random.choice(jokeOption)
+        self.lastIndex = chosenIndex
+        return self.jokesList[chosenIndex]
+
+def showRandomJoke(self):
+        self.currentJoke = self.pickJoke()
+        setupText, _ = self.currentJoke
+
+        self.setupLabel.config(text=setupText)
+        self.punchlineLabel.config(text="")
+        self.punchlineButton.config(state=tk.NORMAL)
+        self.nextJokeButton.config(state=tk.NORMAL)
