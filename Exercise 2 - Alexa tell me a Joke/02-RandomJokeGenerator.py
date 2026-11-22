@@ -107,3 +107,12 @@ def showRandomJoke(self):
         self.punchlineLabel.config(text="")
         self.punchlineButton.config(state=tk.NORMAL)
         self.nextJokeButton.config(state=tk.NORMAL)
+
+def showPunchline(self):
+        if self.currentJoke is None:
+            return
+        _, punchlineText = self.currentJoke
+        self.punchlineLabel.config(text=str(punchlineText) + "\n😂😂😂")
+        self.punchlineButton.config(state=tk.DISABLED)
+
+def main():
