@@ -71,3 +71,20 @@ def buildLayout(self):
 
         self.punchlineLabel = tk.Label(jokeTextFrame, text="", font=("Arial", 11, "italic", "bold"), bg="#FFEBF2", fg="#85593E", wraplength=360, justify="center")
         self.punchlineLabel.grid(row=1, column=0, pady=(10, 0))
+
+        buttonFrame = tk.Frame(mainFrame, bg="#FFF5F8")
+        buttonFrame.grid(row=2, column=0, sticky="ew")
+        buttonFrame.grid_columnconfigure(0, weight=1)
+        buttonFrame.grid_columnconfigure(1, weight=1)
+
+        self.tellJokeButton = tk.Button(buttonFrame, text="Alexa tell me a Joke..", font=("Arial", 10, "bold"), bg="#FAD2E1", fg="#85593E", activebackground="#F5BAD0", activeforeground="#85593E", highlightbackground="#85593E", highlightthickness=4, relief=tk.GROOVE, bd=4, padx=10, pady=10, command=self.showRandomJoke)
+        self.tellJokeButton.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+
+        self.punchlineButton = tk.Button(buttonFrame, text="Show Punchline", font=("Arial", 10), bg="#FAD2E1", fg="#85593E", activebackground="#F5BAD0", activeforeground="#85593E", highlightbackground="#85593E", highlightthickness=4, relief=tk.GROOVE, bd=4, padx=10, pady=9, state=tk.DISABLED, command=self.showPunchline)
+        self.punchlineButton.grid(row=1, column=0, sticky="ew", padx=(0, 5), pady=(0, 8))
+
+        self.nextJokeButton = tk.Button(buttonFrame, text="Next Joke", font=("Arial", 10), bg="#FAD2E1", fg="#85593E", activebackground="#F5BAD0", activeforeground="#85593E", highlightbackground="#85593E", highlightthickness=4, relief=tk.GROOVE, bd=4, padx=10, pady=9, state=tk.DISABLED, command=self.showRandomJoke)
+        self.nextJokeButton.grid(row=1, column=1, sticky="ew", padx=(5, 0), pady=(0, 8))
+
+        self.quitButton = tk.Button(buttonFrame, text="Quit", font=("Arial", 10, "bold"), bg="#FAD2E1", fg="#85593E", activebackground="#F5BAD0", activeforeground="#85593E", highlightbackground="#85593E", highlightthickness=4, relief=tk.GROOVE, bd=4, padx=10, pady=9, command=self.rootWindow.destroy)
+        self.quitButton.grid(row=2, column=0, columnspan=2, sticky="ew")
