@@ -85,3 +85,31 @@ def resolveMarksFilePath():
 def checkStudentMarks(studentNumber, studentName, course1, course2, course3, examMark):
     if not studentName.strip():
         raise ValueError("Student name cannot be empty, input a name and try again.")
+    if not (1000 <= studentNumber <=9999):
+        raise ValueError("Student number must be a valid number between 1000 and 9999.")
+    for labelText, markValue in [("Coursework 1, course1"), ("Coursework 2, course2"), ("Coursework 3, course3")]:
+        if not (0 <=markValue <=20):
+            raise ValueError (labelText + "must be a valid number between 0 and 20.")
+        if not (0 <=examMark <=100):
+            raise ValueError (labelText + "must be a valid number between 0 and 100.")
+
+def cloneStudentRecords(studentList):
+    return[dict(studentItem) for studentItem in studentList]
+
+def loadStudentData(filePath):
+    if not filePath.exists():
+        raise FileNotFoundError("Could not find student's grade file at: " + str(filePath))
+
+    with filePath.open("r", encoding="utf-8") as marksFile:
+        rawLines = [line.strip() for line in marksFile if line.strip()]
+
+        if not rawLines:
+            return [], 0
+
+        headerCount = int(rawLines[0])
+        parsedStudents = []
+
+        for lineIndex, rawLine in enumerate(rawLines[1:], start=2):
+            parts = [item.strip() for item in rawLine.split(",")]
+        if len(parts) != 6:
+            raise ValueError("Line " + str(lineIndex) + " must have 6 comma separated fields.")
