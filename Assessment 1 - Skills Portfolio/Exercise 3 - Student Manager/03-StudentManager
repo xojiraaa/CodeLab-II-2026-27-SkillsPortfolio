@@ -1,0 +1,79 @@
+from pathlib import Path
+import random
+import tkinter as tk
+from tkinter import filedialog, messagebox
+
+themePalettes = {
+    "lightMode": {
+        "appBg": "#F4F0FA",
+        "railBg": "#2A1B47",
+        "railCardBg": "#37245C",
+        "railActiveBg": "#6D3FD9",
+        "railText": "#F7F3FD",
+        "railSelectedText": "#FFF5F8",
+        "railMuted": "#C8B8EA",
+        "topBarBg": "#FFFFFF",
+        "borderColor": "#DDD1F0",
+        "cardBg": "#FFFFFF",
+        "kpiBg": "#F9F6FD",
+        "inputBg": "#FAF8FD",
+        "primaryText": "#231936",
+        "headingText": "#4C2699",
+        "subHeadingText": "#6E4BB8",
+        "mutedText": "#6C5F84",
+        "errorText": "#B91C1C",
+        "accentBtnBg": "#6D3FD9",
+        "accentBtnFg": "#FFFFFF",
+        "accentBtnActive": "#592EC0",
+        "secondaryBtnBg": "#EDE5FA",
+        "secondaryBtnFg": "#4C2699",
+        "secondaryBtnActive": "#DFD2F6",
+        "successBtnBg": "#E4F5EC",
+        "successBtnFg": "#1D6B43",
+        "dangerBtnBg": "#FDE8E8",
+        "dangerBtnFg": "#9B1C1C",
+        "badgeBg": "#EDE5FA",
+        "badgeFg": "#582BB8",
+    },
+    "darkMode": {
+        "appBg": "#120E1C",
+        "railBg": "#1A1329",
+        "railCardBg": "#241A3A",
+        "railActiveBg": "#7C4DFF",
+        "railText": "#F5F0FF",
+        "railSelectedText": "#FFEBF2",
+        "railMuted": "#B49FE3",
+        "topBarBg": "#1B142B",
+        "borderColor": "#332552",
+        "cardBg": "#1E1630",
+        "kpiBg": "#261C3D",
+        "inputBg": "#161024",
+        "primaryText": "#F4EFFC",
+        "headingText": "#C9A8FF",
+        "subHeadingText": "#A67EF0",
+        "mutedText": "#A393C4",
+        "errorText": "#F87171",
+        "accentBtnBg": "#7C4DFF",
+        "accentBtnFg": "#FFFFFF",
+        "accentBtnActive": "#6838F5",
+        "secondaryBtnBg": "#2D214A",
+        "secondaryBtnFg": "#E4D4FF",
+        "secondaryBtnActive": "#3B2C5E",
+        "successBtnBg": "#193829",
+        "successBtnFg": "#86EFAC",
+        "dangerBtnBg": "#3B1B22",
+        "dangerBtnFg": "#FCA5A5",
+        "badgeBg": "#2D214A",
+        "badgeFg": "#D8BCFF",
+    },
+}
+
+
+def resolveMarksFilePath():
+    baseDir = Path(__file__).resolve().parent
+    candidatePaths = [
+        baseDir / "resources" / "studentMarks.txt",
+        baseDir.parent / "resources" / "studentMarks.txt",
+        baseDir / "A1 - Resources" / "studentMarks.txt",
+        baseDir.parent / "A1 - Resources" / "studentMarks.txt",
+    ]
