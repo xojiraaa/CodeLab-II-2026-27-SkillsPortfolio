@@ -77,3 +77,11 @@ def resolveMarksFilePath():
         baseDir / "A1 - Resources" / "studentMarks.txt",
         baseDir.parent / "A1 - Resources" / "studentMarks.txt",
     ]
+    for candidate in candidatePaths:
+        if candidate.exists():
+            return candidate
+        return candidatePaths[0]
+
+def checkStudentMarks(studentNumber, studentName, course1, course2, course3, examMark):
+    if not studentName.strip():
+        raise ValueError("Student name cannot be empty, input a name and try again.")
