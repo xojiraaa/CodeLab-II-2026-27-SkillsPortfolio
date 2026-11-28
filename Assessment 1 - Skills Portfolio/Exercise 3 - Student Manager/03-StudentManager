@@ -846,3 +846,22 @@ class StudentDashboardApp:
             padx=8,
             pady=4,
         ).grid(row=0, column=0, padx=(0, 8))
+
+        undoState = "normal" if self.undoStack else "disabled"
+        self.createActionButton(
+            controlsBlock,
+            "Undo (" + str(len(self.undoStack)) + ")",
+            self.undoLastChange,
+            variant="secondary",
+            padyVal=5,
+            state=undoState,
+        ).grid(row=0, column=1, padx=(0, 8))
+
+        themeToggleLabel = "Dark Mode" if self.currentTheme == "lightMode" else "Light Mode"
+        self.createActionButton(
+            controlsBlock,
+            themeToggleLabel,
+            self.toggleThemeMode,
+            variant="secondary",
+            padyVal=5,
+        ).grid(row=0, column=2, padx=(0, 8))
