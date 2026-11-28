@@ -80,21 +80,23 @@ def resolveMarksFilePath():
     for candidate in candidatePaths:
         if candidate.exists():
             return candidate
-        return candidatePaths[0]
+    return candidatePaths[0]
 
 def checkStudentMarks(studentNumber, studentName, course1, course2, course3, examMark):
     if not studentName.strip():
         raise ValueError("Student name cannot be empty, input a name and try again.")
-    if not (1000 <= studentNumber <=9999):
+    if not (1000 <= studentNumber <= 9999):
         raise ValueError("Student number must be a valid number between 1000 and 9999.")
-    for labelText, markValue in [("Coursework 1, course1"), ("Coursework 2, course2"), ("Coursework 3, course3")]:
-        if not (0 <=markValue <=20):
-            raise ValueError (labelText + "must be a valid number between 0 and 20.")
-        if not (0 <=examMark <=100):
-            raise ValueError (labelText + "must be a valid number between 0 and 100.")
+    for labelText, markValue in [("Coursework 1", course1), ("Coursework 2", course2), ("Coursework 3", course3)]:
+        if not (0 <= markValue <= 20):
+            raise ValueError(labelText + " must be a valid number between 0 and 20.")
+    if not (0 <= examMark <= 100):
+        raise ValueError("Exam mark must be a valid number between 0 and 100.")
+
 
 def cloneStudentRecords(studentList):
-    return[dict(studentItem) for studentItem in studentList]
+    return [dict(studentItem) for studentItem in studentList]
+
 
 def loadStudentData(filePath):
     if not filePath.exists():
@@ -103,13 +105,48 @@ def loadStudentData(filePath):
     with filePath.open("r", encoding="utf-8") as marksFile:
         rawLines = [line.strip() for line in marksFile if line.strip()]
 
-        if not rawLines:
-            return [], 0
+    if not rawLines:
+        return [], 0
 
-        headerCount = int(rawLines[0])
-        parsedStudents = []
+    headerCount = int(rawLines[0])
+    parsedStudents = []
 
-        for lineIndex, rawLine in enumerate(rawLines[1:], start=2):
-            parts = [item.strip() for item in rawLine.split(",")]
+    for lineIndex, rawLine in enumerate(rawLines[1:], start=2):
+        parts = [item.strip() for item in rawLine.split(",")]
         if len(parts) != 6:
             raise ValueError("Line " + str(lineIndex) + " must have 6 comma separated fields.")
+
+        studentNumber = int(parts[0])
+        studentName = parts[1]
+        course1 = int(parts[2])
+        course2 = int(parts[3])
+        course3 = int(parts[4])
+        examMark = int(parts[5])
+
+        checkStudentMarks(studentNumber, studentName, course1, course2, course3, examMark)
+        parsedStudents.append({
+            "code": studentNumber,
+            "name": studentName,
+            "cw1": course1,
+            "cw2": course2,
+            "cw3": course3,
+            "exam": examMark,
+        })
+
+    return parsedStudents, headerCount
+
+
+def writeStudentData(filePath, studentList):
+    filePath.parent.mkdir(parents=True, exist_ok=True)
+    with filePath.open("w", encoding="utf-8") as marksFile:
+        marksFile.write(str(len(studentList)) + "\n")
+        for studentItem in studentList:
+            lineText = (
+                str(studentItem["code"]) + ","
+                + studentItem["name"] + ","
+                + str(studentItem["cw1"]) + ","
+                + str(studentItem["cw2"]) + ","
+                + str(studentItem["cw3"]) + ","
+                + str(studentItem["exam"]) + "\n"
+            )
+            marksFile.write(lineText)
