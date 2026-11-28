@@ -150,3 +150,144 @@ def writeStudentData(filePath, studentList):
                 + str(studentItem["exam"]) + "\n"
             )
             marksFile.write(lineText)
+
+class StudentDashboardApp:
+    adminPassword = "Codelabisawesome@123"
+    maxPasswordAttempts = 3
+
+    def __init__(self, rootWindow, filePath, studentList, headerCount):
+        self.rootWindow = rootWindow
+        self.rootWindow.title("Student Marks Dashboard")
+        self.rootWindow.geometry("980x690")
+        self.rootWindow.minsize(900, 610)
+
+        self.filePath = filePath
+        self.studentList = studentList
+        self.headerCount = headerCount
+        self.currentTheme = "lightMode"
+        self.activeNavKey = "overview"
+        self.failedPasswordAttempts = 0
+        self.isAdminLockedOut = False
+        self.isAdminSessionUnlocked = False
+        self.hasUnsavedChanges = False
+        self.undoStack = []
+        self.filterQueryText = ""
+        self.filterGradeChoice = "All"
+        self.statusText = "Ready • " + str(len(self.studentList)) + " student record(s) loaded"
+
+        self.rootWindow.grid_columnconfigure(0, weight=1)
+        self.rootWindow.grid_rowconfigure(0, weight=1)
+
+        self.shellFrame = tk.Frame(self.rootWindow)
+        self.shellFrame.grid(row=0, column=0, sticky="nsew")
+        self.shellFrame.grid_columnconfigure(1, weight=1)
+        self.shellFrame.grid_rowconfigure(0, weight=1)
+
+        self.navRail = tk.Frame(self.shellFrame, width=250)
+        self.navRail.grid(row=0, column=0, sticky="ns")
+        self.navRail.grid_propagate(False)
+        self.navRail.grid_columnconfigure(0, weight=1)
+
+        self.workspaceFrame = tk.Frame(self.shellFrame)
+        self.workspaceFrame.grid(row=0, column=1, sticky="nsew")
+        self.workspaceFrame.grid_columnconfigure(0, weight=1)
+        self.workspaceFrame.grid_rowconfigure(1, weight=1)
+
+        self.topBar = tk.Frame(self.workspaceFrame, padx=20, pady=12)
+        self.topBar.grid(row=0, column=0, sticky="ew")
+        self.topBar.grid_columnconfigure(0, weight=1)
+
+        self.contentArea = tk.Frame(self.workspaceFrame, padx=20, pady=16)
+        self.contentArea.grid(row=1, column=0, sticky="nsew")
+        self.contentArea.grid_columnconfigure(0, weight=1)
+        self.contentArea.grid_rowconfigure(1, weight=1)
+
+        self.showOverviewDashboard()
+
+    def getTheme(self):
+        return themePalettes.get(self.currentTheme, themePalettes["lightMode"])
+
+    def toggleThemeMode(self):
+        self.currentTheme = "darkMode" if self.currentTheme == "lightMode" else "lightMode"
+        self.refreshCurrentView()
+
+    def refreshCurrentView(self):
+        viewMap = {
+            "overview": self.showOverviewDashboard,
+            "all": self.showAllRecordsView,
+            "lookup": self.showLookupView,
+            "highest": self.showHighestStudent,
+            "lowest": self.showLowestStudent,
+            "sort": self.showSortView,
+            "add": self.showAddView,
+            "delete": self.showDeleteView,
+            "update": self.showUpdateSelectView,
+        }
+        handlerFn = viewMap.get(self.activeNavKey, self.showOverviewDashboard)
+        handlerFn()
+
+    def clearContainer(self, containerWidget):
+        for childWidget in containerWidget.winfo_children():
+            childWidget.destroy()
+
+    def generateTwoFactorCode(self):
+        return str(random.randint(0, 999999)).zfill(6)
+
+    def isLockedOut(self):
+        return self.isAdminLockedOut or self.failedPasswordAttempts >= self.maxPasswordAttempts
+
+    def handleLockedOutState(self):
+        self.isAdminLockedOut = True
+        self.statusText = "Admin access locked after " + str(self.maxPasswordAttempts) + " failed password attempts"
+        messagebox.showerror(
+            "Account Locked",
+            "Too many incorrect admin password attempts (" + str(self.maxPasswordAttempts) + " max). Admin actions are locked.",
+        )
+        self.refreshCurrentView()
+
+    def lockAdminSession(self):
+        self.isAdminSessionUnlocked = False
+        self.statusText = "Admin session locked"
+        self.refreshCurrentView()
+
+    def resetAdminLockout(self):
+        self.isAdminLockedOut = False
+        self.failedPasswordAttempts = 0
+        self.isAdminSessionUnlocked = False
+        self.statusText = "Admin lockout reset. 2FA required for admin actions"
+        messagebox.showinfo("Lockout Reset", "Admin lockout has been reset.")
+        self.refreshCurrentView()
+
+    def runOrAuthAdminAction(self, actionName, onVerified):
+        if self.isLockedOut():
+            self.handleLockedOutState()
+            return
+
+        if self.isAdminSessionUnlocked:
+            self.statusText = "Admin session active: Opening " + actionName
+            onVerified()
+            return
+
+        self.promptAdminTwoFactorAuth(actionName, onVerified)
+
+    def promptAdminTwoFactorAuth(self, actionName, onVerified):
+        palette = self.getTheme()
+
+        if self.isLockedOut():
+            self.handleLockedOutState()
+            return
+
+        otpCode = self.generateTwoFactorCode()
+
+        authModal = tk.Toplevel(self.rootWindow)
+        authModal.title("Two-Factor Admin Authorization")
+        authModal.geometry("420x325")
+        authModal.resizable(False, False)
+        authModal.configure(bg=palette["cardBg"])
+        authModal.transient(self.rootWindow)
+        authModal.grab_set()
+        authModal.grid_columnconfigure(0, weight=1)
+
+        modalBox = tk.Frame(authModal, bg=palette["cardBg"], padx=20, pady=16)
+        modalBox.grid(row=0, column=0, sticky="nsew")
+        modalBox.grid_columnconfigure(0, weight=1)
