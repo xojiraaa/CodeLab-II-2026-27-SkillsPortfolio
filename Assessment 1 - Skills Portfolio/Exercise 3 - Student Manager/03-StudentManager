@@ -291,3 +291,558 @@ class StudentDashboardApp:
         modalBox = tk.Frame(authModal, bg=palette["cardBg"], padx=20, pady=16)
         modalBox.grid(row=0, column=0, sticky="nsew")
         modalBox.grid_columnconfigure(0, weight=1)
+        
+        tk.Label(
+            modalBox,
+            text="Two-Factor Admin Authorization",
+            font=("Georgia", 14, "bold"),
+            bg=palette["cardBg"],
+            fg=palette["headingText"],
+        ).grid(row=0, column=0, sticky="w")
+
+        attemptsLeft = self.maxPasswordAttempts - self.failedPasswordAttempts
+        tk.Label(
+            modalBox,
+            text="Required before: " + actionName + " (" + str(attemptsLeft) + " attempt(s) left)",
+            font=("Georgia", 9, "italic"),
+            bg=palette["cardBg"],
+            fg=palette["mutedText"],
+        ).grid(row=1, column=0, sticky="w", pady=(2, 10))
+
+        otpBanner = tk.Frame(
+            modalBox,
+            bg=palette["kpiBg"],
+            highlightbackground=palette["borderColor"],
+            highlightthickness=1,
+            padx=10,
+            pady=6,
+        )
+        otpBanner.grid(row=2, column=0, sticky="ew", pady=(0, 10))
+        otpBanner.grid_columnconfigure(0, weight=1)
+
+        tk.Label(
+            otpBanner,
+            text="2FA Token Code: " + otpCode,
+            font=("Georgia", 10, "bold"),
+            bg=palette["kpiBg"],
+            fg=palette["headingText"],
+        ).grid(row=0, column=0, sticky="w")
+
+        tk.Label(
+            modalBox,
+            text="Admin Password:",
+            font=("Georgia", 10, "bold"),
+            bg=palette["cardBg"],
+            fg=palette["primaryText"],
+        ).grid(row=3, column=0, sticky="w")
+
+        passwordVar = tk.StringVar()
+        passwordEntry = tk.Entry(
+            modalBox,
+            textvariable=passwordVar,
+            show="*",
+            font=("Georgia", 11),
+            bg=palette["inputBg"],
+            fg=palette["primaryText"],
+            insertbackground=palette["primaryText"],
+            highlightbackground=palette["borderColor"],
+            highlightthickness=1,
+            relief=tk.FLAT,
+        )
+        passwordEntry.grid(row=4, column=0, sticky="ew", ipady=4, pady=(2, 8))
+        passwordEntry.focus()
+
+        tk.Label(
+            modalBox,
+            text="6-Digit 2FA Code:",
+            font=("Georgia", 10, "bold"),
+            bg=palette["cardBg"],
+            fg=palette["primaryText"],
+        ).grid(row=5, column=0, sticky="w")
+
+        codeVar = tk.StringVar()
+        codeEntry = tk.Entry(
+            modalBox,
+            textvariable=codeVar,
+            font=("Georgia", 11),
+            bg=palette["inputBg"],
+            fg=palette["primaryText"],
+            insertbackground=palette["primaryText"],
+            highlightbackground=palette["borderColor"],
+            highlightthickness=1,
+            relief=tk.FLAT,
+        )
+        codeEntry.grid(row=6, column=0, sticky="ew", ipady=4, pady=(2, 6))
+
+        errVar = tk.StringVar(value="")
+        tk.Label(
+            modalBox,
+            textvariable=errVar,
+            font=("Georgia", 9, "bold"),
+            bg=palette["cardBg"],
+            fg=palette["errorText"],
+            wraplength=370,
+            justify="left",
+        ).grid(row=7, column=0, sticky="w", pady=(0, 6))
+
+        verifyBtnRef = []
+        inputBoxes = [passwordEntry, codeEntry]
+
+        def lockOutUser():
+            self.isAdminLockedOut = True
+            self.isAdminSessionUnlocked = False
+            self.statusText = "Admin access locked after " + str(self.maxPasswordAttempts) + " failed password attempts"
+            for boxWidget in inputBoxes:
+                boxWidget.config(state="disabled")
+            if verifyBtnRef:
+                verifyBtnRef[0].config(state="disabled")
+            errVar.set("Locked out after " + str(self.maxPasswordAttempts) + " incorrect password attempts.")
+            messagebox.showerror(
+                "Locked Out",
+                "Incorrect admin password entered " + str(self.maxPasswordAttempts) + " times. You have been locked out.",
+                parent=authModal,
+            )
+            authModal.destroy()
+            self.refreshCurrentView()
+
+        def verifyCredentials(_event=None):
+            if self.isLockedOut():
+                lockOutUser()
+                return
+
+            enteredPass = passwordVar.get()
+            enteredCode = codeVar.get().strip()
+
+            if enteredPass != self.adminPassword:
+                self.failedPasswordAttempts += 1
+                remaining = self.maxPasswordAttempts - self.failedPasswordAttempts
+                if remaining <= 0:
+                    lockOutUser()
+                else:
+                    self.statusText = (
+                        "Incorrect admin password (" + str(self.failedPasswordAttempts)
+                        + "/" + str(self.maxPasswordAttempts) + " attempts used)"
+                    )
+                    errVar.set(
+                        "Invalid admin password. " + str(remaining) + " attempt(s) remaining before lockout."
+                    )
+                    passwordVar.set("")
+                    passwordEntry.focus()
+                return
+
+            if enteredCode != otpCode:
+                errVar.set("Invalid 6-digit 2FA code.")
+                return
+
+            self.failedPasswordAttempts = 0
+            self.isAdminSessionUnlocked = True
+            self.statusText = "2FA verified • Admin session unlocked for " + actionName
+            authModal.destroy()
+            onVerified()
+
+        passwordEntry.bind("<Return>", lambda _e: codeEntry.focus())
+        codeEntry.bind("<Return>", verifyCredentials)
+
+        btnRow = tk.Frame(modalBox, bg=palette["cardBg"])
+        btnRow.grid(row=8, column=0, sticky="ew")
+        btnRow.grid_columnconfigure(0, weight=1)
+        btnRow.grid_columnconfigure(1, weight=1)
+
+        verifyBtn = self.createActionButton(
+            btnRow, "Verify & Continue", verifyCredentials, variant="primary", padyVal=6
+        )
+        verifyBtn.grid(row=0, column=0, sticky="ew", padx=(0, 4))
+        verifyBtnRef.append(verifyBtn)
+
+        self.createActionButton(
+            btnRow, "Cancel", authModal.destroy, variant="secondary", padyVal=6
+        ).grid(row=0, column=1, sticky="ew", padx=(4, 0))
+
+    maxTotalMarks = 160
+
+    def getCourseworkTotal(self, studentItem):
+        return studentItem["cw1"] + studentItem["cw2"] + studentItem["cw3"]
+
+    def getOverallTotal(self, studentItem):
+        return self.getCourseworkTotal(studentItem) + studentItem["exam"]
+
+    def getOverallPercentage(self, studentItem):
+        return (self.getOverallTotal(studentItem) / self.maxTotalMarks) * 100.0
+
+    def getGradeLetter(self, percentageVal):
+        if percentageVal >= 70:
+            return "A"
+        elif percentageVal >= 60:
+            return "B"
+        elif percentageVal >= 50:
+            return "C"
+        elif percentageVal >= 40:
+            return "D"
+        return "F"
+
+    def getStudentGrade(self, studentItem):
+        return self.getGradeLetter(self.getOverallPercentage(studentItem))
+
+    def getClassAveragePercentage(self, recordsList=None):
+        targetList = self.studentList if recordsList is None else recordsList
+        if not targetList:
+            return 0.0
+        return sum(self.getOverallPercentage(s) for s in targetList) / len(targetList)
+
+    def getGradeBreakdown(self, recordsList=None):
+        targetList = self.studentList if recordsList is None else recordsList
+        counts = {"A": 0, "B": 0, "C": 0, "D": 0, "F": 0}
+        for studentItem in targetList:
+            gradeKey = self.getStudentGrade(studentItem)
+            counts[gradeKey] = counts.get(gradeKey, 0) + 1
+        return counts
+
+    def getPassRate(self, recordsList=None):
+        targetList = self.studentList if recordsList is None else recordsList
+        if not targetList:
+            return 0.0
+        passedCount = sum(1 for s in targetList if self.getOverallPercentage(s) >= 40.0)
+        return (passedCount / len(targetList)) * 100.0
+
+    def filterStudentRecords(self, queryText="", gradeFilter="All"):
+        cleanedQuery = queryText.strip().lower()
+        filtered = []
+        for studentItem in self.studentList:
+            studentGrade = self.getStudentGrade(studentItem)
+            if gradeFilter != "All" and studentGrade != gradeFilter:
+                continue
+            if cleanedQuery:
+                matchesName = cleanedQuery in studentItem["name"].lower()
+                matchesCode = cleanedQuery in str(studentItem["code"])
+                matchesGrade = cleanedQuery == studentGrade.lower()
+                if not (matchesName or matchesCode or matchesGrade):
+                    continue
+            filtered.append(studentItem)
+        return filtered
+
+    def formatStudentRecord(self, studentItem):
+        cwTotal = self.getCourseworkTotal(studentItem)
+        overallScore = self.getOverallTotal(studentItem)
+        pctVal = self.getOverallPercentage(studentItem)
+        gradeVal = self.getGradeLetter(pctVal)
+
+        return (
+            "Name: " + studentItem["name"] + "   |   Student No: " + str(studentItem["code"]) + "\n"
+            "  Coursework Marks : " + str(studentItem["cw1"]) + ", " + str(studentItem["cw2"]) + ", " + str(studentItem["cw3"])
+            + "  (Total Coursework: " + str(cwTotal) + "/60)\n"
+            "  Examination Mark : " + str(studentItem["exam"]) + "/100   |   Overall Score: " + str(overallScore) + "/160\n"
+            "  Overall Percentage: " + f"{pctVal:.2f}%" + "   |   Grade: " + gradeVal + "\n"
+            + ("-" * 72) + "\n"
+        )
+
+    def buildReportContent(self, recordsList, includeSummary=False):
+        if not recordsList:
+            return "No matching student records available.\n"
+
+        reportText = ""
+        for studentItem in recordsList:
+            reportText += self.formatStudentRecord(studentItem)
+
+        if includeSummary:
+            classSize = len(recordsList)
+            avgPct = self.getClassAveragePercentage(recordsList)
+            passRate = self.getPassRate(recordsList)
+            gradeCounts = self.getGradeBreakdown(recordsList)
+            reportText += "\nCLASS SUMMARY\n"
+            reportText += "  Number of Students in Class : " + str(classSize) + "\n"
+            reportText += "  Average Percentage Mark     : " + f"{avgPct:.2f}%" + "\n"
+            reportText += "  Pass Rate (40%+ overall)    : " + f"{passRate:.1f}%" + "\n"
+            reportText += (
+                "  Grade Breakdown             : "
+                + "A:" + str(gradeCounts["A"]) + "  |  "
+                + "B:" + str(gradeCounts["B"]) + "  |  "
+                + "C:" + str(gradeCounts["C"]) + "  |  "
+                + "D:" + str(gradeCounts["D"]) + "  |  "
+                + "F:" + str(gradeCounts["F"]) + "\n"
+            )
+
+        return reportText
+
+    def findStudent(self, queryInput):
+        cleaned = queryInput.strip()
+        if not cleaned:
+            return None
+
+        if cleaned.isdigit():
+            targetCode = int(cleaned)
+            for studentItem in self.studentList:
+                if studentItem["code"] == targetCode:
+                    return studentItem
+
+        lowerQuery = cleaned.lower()
+        for studentItem in self.studentList:
+            if studentItem["name"].lower() == lowerQuery:
+                return studentItem
+
+        for studentItem in self.studentList:
+            if lowerQuery in studentItem["name"].lower():
+                return studentItem
+
+        return None
+
+    def recordUndoSnapshot(self):
+        self.undoStack.append(cloneStudentRecords(self.studentList))
+
+    def undoLastChange(self):
+        if not self.undoStack:
+            messagebox.showinfo("Nothing to Undo", "No previous student record changes to undo.")
+            return
+
+        previousList = self.undoStack.pop()
+        self.studentList = previousList
+        if self.persistChanges("Undid last change"):
+            messagebox.showinfo("Undone", "Restored previous student records and updated studentMarks.txt.")
+            self.refreshCurrentView()
+
+    def exportReportToFile(self, reportBody, defaultName="student_report.txt"):
+        chosenPath = filedialog.asksaveasfilename(
+            title="Export Report",
+            initialfile=defaultName,
+            defaultextension=".txt",
+            filetypes=[("Text Files", "*.txt"), ("All Files", "*.*")],
+        )
+        if not chosenPath:
+            return
+
+        try:
+            outFile = Path(chosenPath)
+            outFile.write_text(reportBody, encoding="utf-8")
+            self.statusText = "Exported report to " + outFile.name
+            messagebox.showinfo("Exported", "Report saved to:\n" + str(outFile))
+        except Exception as exportErr:
+            messagebox.showerror("Export Error", "Could not save report:\n" + str(exportErr))
+
+    def persistChanges(self, actionNote):
+        try:
+            writeStudentData(self.filePath, self.studentList)
+            self.headerCount = len(self.studentList)
+            self.hasUnsavedChanges = False
+            self.statusText = actionNote + " • " + str(len(self.studentList)) + " saved to studentMarks.txt"
+            return True
+        except Exception as saveErr:
+            self.hasUnsavedChanges = True
+            messagebox.showerror("Save Error", "Failed to save studentMarks.txt:\n" + str(saveErr))
+            return False
+
+    def reloadFromDisk(self):
+        if self.hasUnsavedChanges:
+            proceed = messagebox.askyesno(
+                "Unsaved Changes",
+                "Reloading from disk will overwrite unsaved state. Continue?",
+            )
+            if not proceed:
+                return
+
+        try:
+            loadedList, headerNum = loadStudentData(self.filePath)
+            self.studentList = loadedList
+            self.headerCount = headerNum
+            self.hasUnsavedChanges = False
+            self.undoStack.clear()
+            self.statusText = "Reloaded " + str(len(self.studentList)) + " record(s) from file"
+            messagebox.showinfo("Reloaded", "Loaded " + str(len(self.studentList)) + " record(s).")
+        except Exception as loadErr:
+            messagebox.showerror("Reload Error", str(loadErr))
+        self.refreshCurrentView()
+
+    def createActionButton(self, parentWidget, btnLabel, btnCommand, variant="primary", padyVal=7, state="normal"):
+        palette = self.getTheme()
+        if variant == "primary":
+            bgCol = palette["accentBtnBg"]
+            fgCol = palette["accentBtnFg"]
+            activeCol = palette["accentBtnActive"]
+        elif variant == "success":
+            bgCol = palette["successBtnBg"]
+            fgCol = palette["successBtnFg"]
+            activeCol = palette["secondaryBtnActive"]
+        elif variant == "danger":
+            bgCol = palette["dangerBtnBg"]
+            fgCol = palette["dangerBtnFg"]
+            activeCol = palette["secondaryBtnActive"]
+        else:
+            bgCol = palette["secondaryBtnBg"]
+            fgCol = palette["secondaryBtnFg"]
+            activeCol = palette["secondaryBtnActive"]
+
+        return tk.Button(
+            parentWidget,
+            text=btnLabel,
+            font=("Georgia", 10, "bold"),
+            bg=bgCol,
+            fg=fgCol,
+            disabledforeground=palette["mutedText"],
+            activebackground=activeCol,
+            activeforeground=fgCol,
+            relief=tk.FLAT,
+            bd=0,
+            cursor="hand2" if state == "normal" else "arrow",
+            state=state,
+            padx=14,
+            pady=padyVal,
+            command=btnCommand,
+        )
+
+    def renderDashboardChrome(self, activeKey, pageTitle, pageSubtitle):
+        palette = self.getTheme()
+        self.activeNavKey = activeKey
+        locked = self.isLockedOut()
+
+        self.rootWindow.configure(bg=palette["appBg"])
+        self.shellFrame.configure(bg=palette["appBg"])
+        self.navRail.configure(bg=palette["railBg"])
+        self.workspaceFrame.configure(bg=palette["appBg"])
+        self.topBar.configure(
+            bg=palette["topBarBg"],
+            highlightbackground=palette["borderColor"],
+            highlightthickness=1,
+        )
+        self.contentArea.configure(bg=palette["appBg"])
+
+        self.clearContainer(self.navRail)
+        brandBox = tk.Frame(self.navRail, bg=palette["railCardBg"], padx=14, pady=14)
+        brandBox.grid(row=0, column=0, sticky="ew", padx=12, pady=(14, 10))
+        brandBox.grid_columnconfigure(0, weight=1)
+
+        tk.Label(
+            brandBox,
+            text="Code Lab University",
+            font=("Georgia", 8, "bold"),
+            bg=palette["railCardBg"],
+            fg=palette["railMuted"],
+            anchor="w",
+        ).grid(row=0, column=0, sticky="w")
+        tk.Label(
+            brandBox,
+            text="Student Manager",
+            font=("Georgia", 13, "bold"),
+            bg=palette["railCardBg"],
+            fg=palette["railText"],
+            anchor="w",
+        ).grid(row=1, column=0, sticky="w", pady=(2, 0))
+
+        navItems = [
+            ("overview", "Dashboard Overview", self.showOverviewDashboard, False),
+            ("all", "View All Records", self.viewAllRecords, False),
+            ("lookup", "Individual Record", self.showLookupView, False),
+            ("highest", "Highest Score", self.showHighestStudent, False),
+            ("lowest", "Lowest Score", self.showLowestStudent, False),
+            ("sort", "Sort Records", self.showSortView, False),
+            ("add", "Add Student", lambda: self.runOrAuthAdminAction("Add Student", self.showAddView), True),
+            ("delete", "Delete Student", lambda: self.runOrAuthAdminAction("Delete Student", self.showDeleteView), True),
+            ("update", "Update Student", lambda: self.runOrAuthAdminAction("Update Student", self.showUpdateSelectView), True),
+        ]
+
+        navButtonFont = ("Georgia", 10, "bold")
+        for idx, (itemKey, itemLabel, itemCmd, requiresAdmin) in enumerate(navItems, start=1):
+            isSelected = itemKey == activeKey
+            btnDisabled = locked and requiresAdmin
+            if btnDisabled:
+                btnFg = palette["railMuted"]
+            elif isSelected:
+                btnFg = palette["railSelectedText"]
+            else:
+                btnFg = palette["railText"]
+
+            itemBtn = tk.Button(
+                self.navRail,
+                text=itemLabel,
+                font=navButtonFont,
+                bg=palette["railActiveBg"] if isSelected else palette["railBg"],
+                fg=btnFg,
+                disabledforeground=palette["railMuted"],
+                activebackground=palette["railActiveBg"],
+                activeforeground=palette["railSelectedText"] if isSelected else palette["railText"],
+                relief=tk.FLAT,
+                bd=0,
+                anchor="w",
+                cursor="hand2" if not btnDisabled else "arrow",
+                state="disabled" if btnDisabled else "normal",
+                padx=12,
+                pady=6,
+                command=itemCmd,
+            )
+            itemBtn.grid(row=idx, column=0, sticky="ew", padx=10, pady=1)
+
+        if locked:
+            sessionBtnLabel = "Reset Lockout"
+            sessionBtnCmd = self.resetAdminLockout
+        elif self.isAdminSessionUnlocked:
+            sessionBtnLabel = "Lock Admin"
+            sessionBtnCmd = self.lockAdminSession
+        else:
+            sessionBtnLabel = "Unlock Admin"
+            sessionBtnCmd = lambda: self.promptAdminTwoFactorAuth("Admin Session", self.refreshCurrentView)
+
+        sessionBtn = tk.Button(
+            self.navRail,
+            text=sessionBtnLabel,
+            font=("Georgia", 9, "bold"),
+            bg=palette["railCardBg"],
+            fg=palette["railText"],
+            activebackground=palette["railActiveBg"],
+            activeforeground=palette["railSelectedText"],
+            relief=tk.FLAT,
+            bd=0,
+            cursor="hand2",
+            padx=12,
+            pady=6,
+            command=sessionBtnCmd,
+        )
+        sessionBtn.grid(row=10, column=0, sticky="ew", padx=12, pady=(10, 2))
+
+        exitRailBtn = tk.Button(
+            self.navRail,
+            text="Exit Application",
+            font=("Georgia", 9, "bold"),
+            bg=palette["railCardBg"],
+            fg=palette["railMuted"],
+            activebackground=palette["railActiveBg"],
+            activeforeground=palette["railText"],
+            relief=tk.FLAT,
+            bd=0,
+            cursor="hand2",
+            padx=12,
+            pady=6,
+            command=self.rootWindow.destroy,
+        )
+        exitRailBtn.grid(row=11, column=0, sticky="ew", padx=12, pady=(4, 14))
+
+        self.clearContainer(self.topBar)
+        titleBlock = tk.Frame(self.topBar, bg=palette["topBarBg"])
+        titleBlock.grid(row=0, column=0, sticky="w")
+
+        tk.Label(
+            titleBlock,
+            text=pageTitle,
+            font=("Georgia", 15, "bold"),
+            bg=palette["topBarBg"],
+            fg=palette["headingText"],
+        ).grid(row=0, column=0, sticky="w")
+        tk.Label(
+            titleBlock,
+            text=pageSubtitle,
+            font=("Georgia", 9),
+            bg=palette["topBarBg"],
+            fg=palette["mutedText"],
+        ).grid(row=1, column=0, sticky="w")
+
+        controlsBlock = tk.Frame(self.topBar, bg=palette["topBarBg"])
+        controlsBlock.grid(row=0, column=1, sticky="e")
+
+        syncLabel = "Unsaved Changes" if self.hasUnsavedChanges else "Synced"
+        syncFg = palette["errorText"] if self.hasUnsavedChanges else palette["successBtnFg"]
+        syncBg = palette["dangerBtnBg"] if self.hasUnsavedChanges else palette["successBtnBg"]
+        tk.Label(
+            controlsBlock,
+            text=syncLabel,
+            font=("Georgia", 8, "bold"),
+            bg=syncBg,
+            fg=syncFg,
+            padx=8,
+            pady=4,
+        ).grid(row=0, column=0, padx=(0, 8))
